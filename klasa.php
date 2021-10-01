@@ -295,7 +295,7 @@ class Produkt
             $dir1 = $this->generateRandomString(2);
             $dir2 = $this->generateRandomString(2);
             $dir_path = $const_path."/$dir1/$dir2";
-            if(!file_exists($const_path."/".$dir1))
+            if(!file_exists($dir_path))
             {
                 mkdir($dir_path,0777,true);
                 chmod($const_path."/$dir1", 0777);
