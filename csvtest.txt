@@ -1,0 +1,42 @@
+BEZ TRANSAKCJI
+
+import = 176
+product = 173
+debug = 26
+
+
+import - product
+(
+R08280.06
+R08430.02 - nie ma w debugu
+R08430.06
+)
+
+Z TRANSAKCJĄ
+
+import = 176
+product = 159
+debug = 26
+
+import - product
+17 sztuk
+
+(
+R08280.06 Y
+R08253.08
+R08255.28
+R08255.55 Y
+R08293.04
+R08285.02
+R08285.08
+R08285.21 Y
+R08326.02
+R08336.05
+R08336.08 Y
+R08337.06 Y
+R08364.28
+R08367.02
+R08367.04 Y
+R08430.02
+R08430.06 Y
+)
