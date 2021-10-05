@@ -4,14 +4,17 @@ header('Content-Type: text/html; charset=utf-8');
 
 date_default_timezone_set('Europe/Warsaw');
 
-// Dane do połączenia dla PDO i na tym głównie opiera sie cały skrypt
+// Dane do połączenia dla PDO i na tym opiera sie cały skrypt
 
 $servername = "localhost";     // nazwa serwera
 $username = "root";            // login do serwera
 $password = "";                // haslo do serwera
 $dbname = "kubki-reklamowe";   // nazwa bazy danych
+$file_path = "testowe3.csv";   // sciezka do pliku
 
 
+// TODO Ogarniecie liczenia komorek zeby sie nie dodawaly
+// Pododawanie wszedzie debug_import messeges
 
 class Produkt
 {
@@ -131,6 +134,7 @@ class Produkt
         }catch (PDOException $e)
         {
             echo "Wywróciło się na 'test_product_variant' <br>".$e->getMessage()."<br>";
+
         }
 
 
@@ -209,10 +213,12 @@ class Produkt
 
             foreach($data as $row)
             {
-
                 if(count($row) == 30)
                 {
                     $sql_insert->execute($row);
+                }else {
+                    array_push($this->errormessage,[$this->model,"sylius_product","Niezgadza sie liczba komórek w pliku. Docelowo: 30 Aktualnie: ".count($row)]);
+                    $this->maerrory = 1;
                 }
             }
         }catch (PDOException $e)
@@ -453,7 +459,7 @@ class Produkt
                 $fetch = $sql->fetchAll();
                 $this->product_id = $fetch["0"]["MAX(ID)"];
             } catch (PDOException $e) {
-               // $this->sql_debug->execute(array($this->model,"sylius_product",$e->getMessage()));
+//                $this->sql_debug->execute(array($this->model,"sylius_product",$e->getMessage()));
                 array_push($this->errormessage,[$this->model,"sylius_product",$e->getMessage()]);
                 $this->maerrory = 1;
             }
@@ -787,7 +793,7 @@ try {
 $produkt = new Produkt($conn);
 $conn->query("ALTER DATABASE `$dbname` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci");
 $produkt->debug_table();
-$produkt->csv_upload("testowe3.csv");
+$produkt->csv_upload($file_path);
 $produkt->test_product_variant();
 $produkt->taxon_id_array();
 
