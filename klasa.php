@@ -32,7 +32,7 @@ class Produkt
     public $conn = null;
     public $attr_array = null;
     public $maerrory = 0;
-    public $errormessage = null;
+    public $errormessage = [];
 
 
 
@@ -85,6 +85,7 @@ class Produkt
 
     public function __construct($conn)
     {
+        $conn->exec("SET NAMES 'utf8';");
         $this->conn = $conn;
         // Przygotowanie kwerend w celu oszczędzania zasobów bazy danych. Zabezpieczenie przed atakami typu sql injection
         $this->sql_sylius_product = $conn->prepare("INSERT INTO sylius_product (main_taxon_id, code, created_at,updated_at, enabled,variant_selection_method,average_rating, manufacturer_id) VALUES (?,?,?,?,?,?,?,?)");
@@ -134,6 +135,7 @@ class Produkt
         }catch (PDOException $e)
         {
             echo "Wywróciło się na 'test_product_variant' <br>".$e->getMessage()."<br>";
+            array_push($this->errormessage,[$this->model,"fun test_product_variant()","Blad przy wprowadzaniu variantow z csv do bazy danych "]);
 
         }
 
@@ -142,6 +144,7 @@ class Produkt
 
     public function csv_upload($filename)
     {
+        $this->conn->query("ALTER DATABASE `$this->dbname` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci");
         $data = [];
         $f = fopen($filename, 'r');
 
@@ -217,7 +220,7 @@ class Produkt
                 {
                     $sql_insert->execute($row);
                 }else {
-                    array_push($this->errormessage,[$this->model,"sylius_product","Niezgadza sie liczba komórek w pliku. Docelowo: 30 Aktualnie: ".count($row)]);
+                    $this->sql_debug->execute([$this->model,"sylius_product","Niezgadza sie liczba komórek w pliku. Docelowo: 30 Aktualnie: ".count($row)]);
                     $this->maerrory = 1;
                 }
             }
@@ -238,7 +241,7 @@ class Produkt
     public function debug_table()
     {
         $sql = <<<SQL
-            DROP TABLE IF EXISTS `csv_import`;
+            DROP TABLE IF EXISTS `debug_import`;
             CREATE TABLE debug_import(
                     id int AUTO_INCREMENT NOT NULL,
                     model_code nvarchar(511) ,
@@ -345,6 +348,7 @@ class Produkt
         {
             echo "Wywróciło się na 'sylius_taxon_id': <br>".$e->getMessage()."<br>";
 
+
         }
 
         try{
@@ -360,8 +364,9 @@ class Produkt
 
         }catch (PDOException $e)
         {
-           // $this->sql_debug->execute(array("Funkcja `taxon_id_array`","Fetch atrybutów z `sylius_product_attribute`", "program bez tego może nie działać poprawnie SQL_ERROR: ".$e->getMessage()));
-            array_push($this->errormessage,["Funkcja `taxon_id_array`","Fetch atrybutów z `sylius_product_attribute`", "program bez tego może nie działać poprawnie SQL_ERROR: ".$e->getMessage()]);
+
+            $this->sql_debug->execute(["Funkcja `taxon_id_array`","Fetch atrybutów z `sylius_product_attribute`", "program bez tego może nie działać poprawnie SQL_ERROR: ".$e->getMessage()]);
+
         }
 
 
@@ -470,13 +475,11 @@ class Produkt
 
 
         // Atrybut flaga-ceny
-            if($this->maerrory == 0)
-            {
+
                 if ($this->flaga_ceny) // Sprawdzamy czy atrybut nie jest pusty
                 {
                     $this->add_attr('flaga-ceny', "$this->flaga_ceny");
                 }
-            }
 
 
         // Atrybut kolor
@@ -627,10 +630,9 @@ class Produkt
                     foreach ($main_src_array as $main) {
                         $image_main_path = $const_path . trim($main);
                         $main_pathinfo = pathinfo($image_main_path, PATHINFO_EXTENSION);
-                        list($image_main_x, $image_main_y) = getimagesize($image_main_path);
                         if (!list($image_main_x, $image_main_y) = getimagesize($image_main_path)) {
 //                  $this->sql_debug->execute(array($this->model,"Obslga zdjec","Prawdopodobnie brak zdjecia w folderze 'images'. Nazwa zdjęcia: ".$this->img_main_src));
-                            array_push($this->errormessage, [$this->model, "Obslga zdjec", "Prawdopodobnie brak zdjecia w folderze 'images'. Nazwa zdjęcia: " . $this->img_main_src]);
+                            array_push($this->errormessage, [$this->model, "Obslga zdjec", "Prawdopodobnie brak zdjecia w folderze 'images'. Nazwa zdjęcia: " . trim($main)]);
                         } else {
                             if ($image_main_x >= 600 && $image_main_y >= 480) {
                                 if ($main_pathinfo == "png" || $main_pathinfo == "jpeg" || $main_pathinfo == "jpg" || $main_pathinfo == "svg") {
@@ -648,28 +650,30 @@ class Produkt
                                 } else {
                                     $this->maerrory = 1;
 //                          $this->sql_debug->execute(array($this->model,"sylius_product_variant","Prawdopodobnie nieobsługiwany format zdjecia, obsługujemy jedynie jpg,jpeg,png. Nazwa zdjęcia: ".$this->img_main_src));
-                                    array_push($this->errormessage, [$this->model, "sylius_product_variant", "Prawdopodobnie nieobsługiwany format zdjecia, obsługujemy jedynie jpg,jpeg,png. Nazwa zdjęcia: " . $this->img_main_src]);
+                                    array_push($this->errormessage, [$this->model, "sylius_product_variant", "Prawdopodobnie nieobsługiwany format zdjecia, obsługujemy jedynie jpg,jpeg,png. Nazwa zdjęcia: " . trim($main)]);
                                 }
                             } else {
                                 $this->maerrory = 1;
 //                        $this->sql_debug->execute(array($this->model,"sylius_product_variant","Zdjęcie prawdopodobnie jest za male. Nazwa zdjęcia: ".$this->img_main_src));
-                                array_push($this->errormessage, [$this->model, "sylius_product_variant", "Zdjęcie prawdopodobnie jest za male. Nazwa zdjęcia: " . $this->img_main_src]);
+                                array_push($this->errormessage, [$this->model, "sylius_product_variant", "Zdjęcie prawdopodobnie jest za male. Minimalny wymiar: 600 x 480. Aktualny wymiar: ".$image_main_x." x ".$image_main_y." Nazwa zdjęcia: " . trim($main)]);
                             }
 
 
                         }
-
-                        $image_thumbnail_path = $const_path . $this->img_thumbnail_src;
+                    }
+                        $thumbnail_src_array = explode(",", $this->img_thumbnail_src);
+                        foreach ($thumbnail_src_array as $thumbnail) {
+                            $image_thumbnail_path = $const_path . trim($thumbnail);
                         if (!list($image_thumbnail_x, $image_thumbnail_y) = getimagesize($image_thumbnail_path)) {
                             // $this->sql_debug->execute(array($this->model,"Obslga zdjec","Prawdopodobnie brak zdjecia w folderze 'images'. Nazwa zdjęcia: ".$this->img_main_src));
-                            array_push($this->errormessage, [$this->model, "Obslga zdjec", "Prawdopodobnie brak zdjecia w folderze 'images'. Nazwa zdjęcia: " . $this->img_main_src]);
+                            array_push($this->errormessage, [$this->model, "Obslga zdjec", "Prawdopodobnie brak zdjecia w folderze 'images'. Nazwa zdjęcia: " . trim($thumbnail)]);
                         } else {
                             $thumbnail_pathinfo = pathinfo($image_thumbnail_path, PATHINFO_EXTENSION);
                             if ($image_thumbnail_x >= 600 && $image_thumbnail_y >= 480) {
                                 if ($thumbnail_pathinfo == "png" || $thumbnail_pathinfo == "jpeg" || $thumbnail_pathinfo == "jpg") {
                                     $dir_path = $this->get_dir();
                                     $name = $this->generateRandomString(28);
-                                    copy($image_thumbnail_path, "public/media/image" . "/" . $dir_path . "/" . $name . "." . $main_pathinfo);
+                                    copy($image_thumbnail_path, "public/media/image" . "/" . $dir_path . "/" . $name . "." . $thumbnail_pathinfo);
                                     $path = $dir_path . "/" . $name . "." . $thumbnail_pathinfo;
                                     $sql_var1 = array($this->product_id, "thumbnail", $path);
                                     $this->sql_sylius_product_image->execute($sql_var1);
@@ -679,7 +683,7 @@ class Produkt
 
                                 } else {
                                     //                   $this->sql_debug->execute(array($this->model, "Obslga zdjec", "Prawdopodobnie nieobsługiwany format zdjecia, obsługujemy jedynie jpg,jpeg,png. Nazwa zdjęcia: " . $this->img_thumbnail_src));
-                                    array_push($this->errormessage, [$this->model, "Obslga zdjec", "Prawdopodobnie nieobsługiwany format zdjecia, obsługujemy jedynie jpg,jpeg,png. Nazwa zdjęcia: " . $this->img_thumbnail_src]);
+                                    array_push($this->errormessage, [$this->model, "Obslga zdjec", "Prawdopodobnie nieobsługiwany format zdjecia, obsługujemy jedynie jpg,jpeg,png. Nazwa zdjęcia: " . trim($thumbnail)]);
                                     $this->maerrory = 1;
                                 }
 
@@ -687,13 +691,14 @@ class Produkt
                             } else {
                                 $this->maerrory = 1;
 //                    $this->sql_debug->execute(array($this->model, "Obslga zdjec", "Zdjęcie prawdopodobnie jest za male. Nazwa zdjęcia: " . $this->img_thumbnail_src));
-                                array_push($this->errormessage, [$this->model, "Obslga zdjec", "Zdjęcie prawdopodobnie jest za male. Nazwa zdjęcia: " . $this->img_thumbnail_src]);
+                                array_push($this->errormessage, [$this->model, "Obslga zdjec", "Zdjęcie prawdopodobnie jest za male. Minimalny wymiar: 600 x 480. Aktualny wymiar: ".$image_thumbnail_x." x ".$image_thumbnail_y." Nazwa zdjęcia: " . trim($thumbnail)]);
                             }
                         }
-                    }
+                        }
+
                 } catch (PDOException $e) {
 //            $this->sql_debug->execute(array($this->model,"sylius_product_variant","Problem ze zdjeciem"));
-                    array_push($this->errormessage, [$this->model, "sylius_product_variant", "Problem ze zdjeciem"]);
+                    array_push($this->errormessage, [$this->model, "sylius_product_variant", "Nieprzewidziany problem z zdjeciem. Nazwa zdjęcia: " . trim($thumbnail)]);
                     $this->maerrory = 1;
                 }
             }
@@ -789,9 +794,8 @@ try {
 
 
 
-
-$produkt = new Produkt($conn);
 $conn->query("ALTER DATABASE `$dbname` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci");
+$produkt = new Produkt($conn);
 $produkt->debug_table();
 $produkt->csv_upload($file_path);
 $produkt->test_product_variant();
@@ -803,11 +807,13 @@ $fetch = $sql_fetch_csv->fetchAll();
 $sql_model_code = $conn->prepare("SELECT * FROM csv_import WHERE model_code = ? AND status = 1");
 
 
+//TODO Naprawa bledow o zduplikowanym produkcie przy kazdym errorze
+//TODO Wieksza ilosc produktow w debugu niz statusu 0
+//TDDO Do sprawdzenia wszystkie te linijki poniżej bo chyba średnio są dopracowane
 
 foreach ($fetch as $row)
     {
         try{
-
             if($row['id_Manufacturer'] == null || $row['nazwa'] == null || $row['cena'])
             {
                 $produkt->setValue($row['id_Manufacturer'],$row['ID_Kategori'],$row['model_code'],$row['nazwa'],$row['opis'],$row['zdjecie_glowne'],$row['zdjecie_dodatkowe'],$row['meta_opis'],$row['meta_keywords'],$row['cena'],$row['price_flag'],$row['hydrokolor'],$row['kolory'],$row['dodatkowe_kolory'],$row['waga'],$row['rozmiar'],$row['pojemnosc'],$row['material'],$row['dodatkowy_material_wykonania'],$row['rozmiar_opakowania'],$row['multipack'],$row['rozmiar_opakowania_zbiorczego'],$row['minimalne_zamowienie'],$row['coloration'],$row['znakowanie'],$row['kraj_produkcji'],$row['rozmiar_nadruku']);
