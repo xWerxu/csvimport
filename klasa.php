@@ -151,7 +151,7 @@ class Produkt
         if ($f === false) {
             die('Cannot open the file ' . $filename);
         }
-        $firstline = fgetcsv($f,0,";"); // Wywołuje pierwszą linie poza loopem skipując pierwszą linijkę z nazwami kolumn
+        $firstline = fgetcsv($f,0,";"); // Wywołuje pierwszą linie poza loopem skipując nazwy kolumn
 
         while (($row = fgetcsv($f,0,";")) !== false) {
             $data[] = $row;
@@ -221,7 +221,6 @@ class Produkt
                     $sql_insert->execute($row);
                 }else {
                     $this->sql_debug->execute([$this->model,"sylius_product","Niezgadza sie liczba komórek w pliku. Docelowo: 30 Aktualnie: ".count($row)]);
-                    $this->maerrory = 1;
                 }
             }
         }catch (PDOException $e)
@@ -444,19 +443,12 @@ class Produkt
         $this->maerrory = 0;
         $this->errormessage = [];
 
-        if(!$this->producent || !$this->taxon_id || !$this->model || !$this->nazwa_produktu || !$this->cena)
-        {
-            //$this->sql_debug->execute(array($this->model,"Plik CSV","Brak jednego bądź wielu parametrów w pliku csv: ID producenta, ID kategorii, Kod modelu, Nazwa produktu, Cena"));
-            array_push($this->errormessage,[$this->model,"Plik CSV","Brak jednego bądź wielu parametrów w pliku csv: ID producenta, ID kategorii, Kod modelu, Nazwa produktu, Cena"]);
-            echo "Brak parametrow w pliku csv dla produktu, zostaje on pominiety";
-            $this->maerrory = 1;
-        }else{
+
         // Dodanie wartości do tabeli 'sylius_product'
         $this->conn->beginTransaction();
-        if($this->maerrory == 0)
-        {
+        if ($this->maerrory == 0) {
             try {
-                $sql_var = array($this->taxon_id,$this->kod_produktu,$today,$today,1,"choice",0,$this->producent);  // Stworzenie tabeli z potrzebnymi wartościami branymi z pliku csv
+                $sql_var = array($this->taxon_id, $this->kod_produktu, $today, $today, 1, "choice", 0, $this->producent);  // Stworzenie tabeli z potrzebnymi wartościami branymi z pliku csv
                 $this->sql_sylius_product->execute($sql_var); //Podstawienie wartości do kwerendy oraz jej realizacaja w bazie danych
                 $sql = $this->sql_sylius_product_id;
                 $sql->execute();
@@ -465,133 +457,137 @@ class Produkt
                 $this->product_id = $fetch["0"]["MAX(ID)"];
             } catch (PDOException $e) {
 //                $this->sql_debug->execute(array($this->model,"sylius_product",$e->getMessage()));
-                array_push($this->errormessage,[$this->model,"sylius_product",$e->getMessage()]);
+                array_push($this->errormessage, [$this->model, "sylius_product", $e->getMessage()]);
                 $this->maerrory = 1;
             }
         }
 
-        /* Dodawanie wartości do tabeli `sylius_product_attribute_value`
-        Każdy atrybut jest odzielnie obsługiwany przez różne try-catch'e*/
+        // Dodawanie wartości do tabeli `sylius_product_attribute_value`
 
 
         // Atrybut flaga-ceny
 
-                if ($this->flaga_ceny) // Sprawdzamy czy atrybut nie jest pusty
-                {
-                    $this->add_attr('flaga-ceny', "$this->flaga_ceny");
-                }
-
-
-        // Atrybut kolor
-        if($this->kolor) // Sprawdzamy czy atrybut nie jest pusty
+        if ($this->maerrory == 0)
         {
-            $this->add_attr('kolor',"$this->kolor");
+            if ($this->flaga_ceny) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('flaga-ceny', "$this->flaga_ceny");
+            }
+
+
+            // Atrybut kolor
+            if($this->kolor) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('kolor',"$this->kolor");
+            }
+
+            // Atrybut dodatkowe-kolory
+            if($this->kolor_dodatkowe) // Sprawdzamy czy nie atrybut jest pusty
+            {
+                $this->add_attr('dodatkowe-kolory',"$this->kolor_dodatkowe");
+
+            }
+
+            // Atrybut model
+            if($this->model) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('model',"$this->model");
+
+            }
+
+            // Atrybut minimalne_zamowienie
+            if($this->minimalne_zamowienie) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('minimalne-zamowienie',"$this->minimalne_zamowienie");
+
+            }
+
+            // Atrybut hydrokolor
+            if($this->hydrokolor) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('hydrokolor',"$this->hydrokolor");
+
+            }
+
+            // Atrybut waga
+            if($this->waga) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('waga',"$this->waga");
+
+            }
+
+            // Atrybut rozmiar
+            if($this->rozmiar) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('rozmiar',"$this->rozmiar");
+
+            }
+
+            // Atrybut model
+            if($this->pojemnosc) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('pojemnosc',"$this->pojemnosc");
+
+            }
+
+            // Atrybut material
+            if($this->material) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('material',"$this->material");
+
+            }
+
+            // Atrybut rozmiar_opakowania
+            if($this->rozmiar_opakowania) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('rozmiar-opakowania',"$this->rozmiar_opakowania");
+            }
+
+
+            // Atrybut mulitpack
+            if($this->mulitpack) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('mulitpack',"$this->mulitpack");
+
+            }
+
+            // Atrybut rozmiar_opakowania_zbiorczego
+            if($this->rozmiar_opakowania_zbiorczego) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('rozmiar-opakowania-zbiorczego',"$this->rozmiar_opakowania_zbiorczego");
+
+            }
+
+            // Atrybut coloration
+            if($this->coloration) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('coloration',"$this->coloration");
+
+            }
+
+            // Atrybut znakowanie
+            if($this->znakowanie) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('znakowanie',"$this->znakowanie");
+
+            }
+
+
+            // Atrybut kraj_produkcji
+            if($this->kraj_produkcji) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('kraj-produkcji',"$this->kraj_produkcji");
+
+            }
+
+            // Atrybut rozmiar_nadruku
+            if($this->rozmiar_nadruku) // Sprawdzamy czy atrybut nie jest pusty
+            {
+                $this->add_attr('rozmiar-nadruku',"$this->rozmiar_nadruku");
+            }
         }
 
-        // Atrybut dodatkowe-kolory
-        if($this->kolor_dodatkowe) // Sprawdzamy czy nie atrybut jest pusty
-        {
-            $this->add_attr('dodatkowe-kolory',"$this->kolor_dodatkowe");
 
-        }
-
-        // Atrybut model
-        if($this->model) // Sprawdzamy czy atrybut nie jest pusty
-        {
-            $this->add_attr('model',"$this->model");
-
-        }
-
-        // Atrybut minimalne_zamowienie
-        if($this->minimalne_zamowienie) // Sprawdzamy czy atrybut nie jest pusty
-        {
-            $this->add_attr('minimalne-zamowienie',"$this->minimalne_zamowienie");
-
-        }
-
-        // Atrybut hydrokolor
-        if($this->hydrokolor) // Sprawdzamy czy atrybut nie jest pusty
-        {
-            $this->add_attr('hydrokolor',"$this->hydrokolor");
-
-        }
-
-        // Atrybut waga
-        if($this->waga) // Sprawdzamy czy atrybut nie jest pusty
-        {
-            $this->add_attr('waga',"$this->waga");
-
-        }
-
-        // Atrybut rozmiar
-        if($this->rozmiar) // Sprawdzamy czy atrybut nie jest pusty
-        {
-            $this->add_attr('rozmiar',"$this->rozmiar");
-
-        }
-
-        // Atrybut model
-        if($this->pojemnosc) // Sprawdzamy czy atrybut nie jest pusty
-        {
-            $this->add_attr('pojemnosc',"$this->pojemnosc");
-
-        }
-
-        // Atrybut material
-        if($this->material) // Sprawdzamy czy atrybut nie jest pusty
-        {
-            $this->add_attr('material',"$this->material");
-
-        }
-
-        // Atrybut rozmiar_opakowania
-        if($this->rozmiar_opakowania) // Sprawdzamy czy atrybut nie jest pusty
-        {
-            $this->add_attr('rozmiar-opakowania',"$this->rozmiar_opakowania");
-        }
-
-
-        // Atrybut mulitpack
-        if($this->mulitpack) // Sprawdzamy czy atrybut nie jest pusty
-        {
-            $this->add_attr('mulitpack',"$this->mulitpack");
-
-        }
-
-        // Atrybut rozmiar_opakowania_zbiorczego
-        if($this->rozmiar_opakowania_zbiorczego) // Sprawdzamy czy atrybut nie jest pusty
-        {
-            $this->add_attr('rozmiar-opakowania-zbiorczego',"$this->rozmiar_opakowania_zbiorczego");
-
-        }
-
-        // Atrybut coloration
-        if($this->coloration) // Sprawdzamy czy atrybut nie jest pusty
-        {
-            $this->add_attr('coloration',"$this->coloration");
-
-        }
-
-        // Atrybut znakowanie
-        if($this->znakowanie) // Sprawdzamy czy atrybut nie jest pusty
-        {
-            $this->add_attr('znakowanie',"$this->znakowanie");
-
-        }
-
-
-        // Atrybut kraj_produkcji
-        if($this->kraj_produkcji) // Sprawdzamy czy atrybut nie jest pusty
-        {
-            $this->add_attr('kraj-produkcji',"$this->kraj_produkcji");
-
-        }
-
-        // Atrybut rozmiar_nadruku
-        if($this->rozmiar_nadruku) // Sprawdzamy czy atrybut nie jest pusty
-        {
-            $this->add_attr('rozmiar-nadruku',"$this->rozmiar_nadruku");
-        }
 
         // Dodanie wartosci do tabeli 'sylius_product_channels'
             if($this->maerrory == 0)
@@ -633,6 +629,8 @@ class Produkt
                         if (!list($image_main_x, $image_main_y) = getimagesize($image_main_path)) {
 //                  $this->sql_debug->execute(array($this->model,"Obslga zdjec","Prawdopodobnie brak zdjecia w folderze 'images'. Nazwa zdjęcia: ".$this->img_main_src));
                             array_push($this->errormessage, [$this->model, "Obslga zdjec", "Prawdopodobnie brak zdjecia w folderze 'images'. Nazwa zdjęcia: " . trim($main)]);
+                            $this->maerrory = 1;
+
                         } else {
                             if ($image_main_x >= 600 && $image_main_y >= 480) {
                                 if ($main_pathinfo == "png" || $main_pathinfo == "jpeg" || $main_pathinfo == "jpg" || $main_pathinfo == "svg") {
@@ -670,7 +668,7 @@ class Produkt
                         } else {
                             $thumbnail_pathinfo = pathinfo($image_thumbnail_path, PATHINFO_EXTENSION);
                             if ($image_thumbnail_x >= 600 && $image_thumbnail_y >= 480) {
-                                if ($thumbnail_pathinfo == "png" || $thumbnail_pathinfo == "jpeg" || $thumbnail_pathinfo == "jpg") {
+                                if ($thumbnail_pathinfo == "png" || $thumbnail_pathinfo == "jpeg" || $thumbnail_pathinfo == "jpg" || $main_pathinfo == "svg") {
                                     $dir_path = $this->get_dir();
                                     $name = $this->generateRandomString(28);
                                     copy($image_thumbnail_path, "public/media/image" . "/" . $dir_path . "/" . $name . "." . $thumbnail_pathinfo);
@@ -764,8 +762,6 @@ class Produkt
             $this->conn->commit();
         }else $this->conn->rollback();
 
-        }
-
         echo "<pre>";
         print_r($this->errormessage);
         echo "</pre>";
@@ -807,23 +803,23 @@ $fetch = $sql_fetch_csv->fetchAll();
 $sql_model_code = $conn->prepare("SELECT * FROM csv_import WHERE model_code = ? AND status = 1");
 
 
-//TODO Naprawa bledow o zduplikowanym produkcie przy kazdym errorze
-//TODO Wieksza ilosc produktow w debugu niz statusu 0
-//TDDO Do sprawdzenia wszystkie te linijki poniżej bo chyba średnio są dopracowane
+// TODO Naprawa bledow o zduplikowanym produkcie przy kazdym errorze
+// TODO Wieksza ilosc produktow w debugu niz statusu 0
+// TDDO Do sprawdzenia wszystkie te linijki poniżej bo chyba średnio są dopracowane
 
 foreach ($fetch as $row)
     {
-        try{
-            if($row['id_Manufacturer'] == null || $row['nazwa'] == null || $row['cena'])
+/*        try{
+            if(!$row['id_Manufacturer'] == null || !$row['nazwa'] == null || !$row['cena'] == null)
             {
                 $produkt->setValue($row['id_Manufacturer'],$row['ID_Kategori'],$row['model_code'],$row['nazwa'],$row['opis'],$row['zdjecie_glowne'],$row['zdjecie_dodatkowe'],$row['meta_opis'],$row['meta_keywords'],$row['cena'],$row['price_flag'],$row['hydrokolor'],$row['kolory'],$row['dodatkowe_kolory'],$row['waga'],$row['rozmiar'],$row['pojemnosc'],$row['material'],$row['dodatkowy_material_wykonania'],$row['rozmiar_opakowania'],$row['multipack'],$row['rozmiar_opakowania_zbiorczego'],$row['minimalne_zamowienie'],$row['coloration'],$row['znakowanie'],$row['kraj_produkcji'],$row['rozmiar_nadruku']);
                 $sql_model_code->execute(array($row['model_code']));
                 $sql_model_code->setFetchMode(PDO::FETCH_ASSOC);
                 $fetch_model_code = $sql_model_code->fetchAll();
-                if($fetch_model_code == array())
+                if(!$fetch_model_code == array())
                 {
-                    if(!$produkt->AddProduct()){
-                        echo "Dodano produkt:".$row['model_code'];
+                    if($produkt->AddProduct()){
+                        echo " Dodano produkt:".$row['model_code'];
                         echo "<br><br> ========================================= <br><br>";
                         $conn->prepare("UPDATE csv_import SET status = 1 WHERE id = :id;")->execute([':id' => $row['id']]);
 
@@ -844,7 +840,32 @@ foreach ($fetch as $row)
             $produkt->sql_debug->execute(array($row['model_code'],"Plik CSV","Brak ID Producenta, ID Kategorii, Kod modelu, nazwy produktu, bądź ceny w pliku csv. SQL ERROR: ".$e->getMessage()));
             echo "Problem z produktem: ". $row['model_code'].". Prawdopodobnie brak jednego z wymaganych parametrow w pliku csv<br>".$e->getMessage()."<br>";
             echo "<br><br> ======================================== <br><br>";
+        }*/
+
+
+        try {
+
+            if(!$row['id_Manufacturer'] || !$row['ID_Kategori'] || !$row['model_code'] || !$row['cena'] || !$row['nazwa'])
+            {
+                $produkt->sql_debug->execute(array("ID: ".$row['id'],"Plik CSV","Brak ID Producenta, ID Kategorii, Kod modelu, nazwy produktu, bądź ceny w pliku csv."));
+
+            }else
+            {
+                $produkt->setValue($row['id_Manufacturer'],$row['ID_Kategori'],$row['model_code'],$row['nazwa'],$row['opis'],$row['zdjecie_glowne'],$row['zdjecie_dodatkowe'],$row['meta_opis'],$row['meta_keywords'],$row['cena'],$row['price_flag'],$row['hydrokolor'],$row['kolory'],$row['dodatkowe_kolory'],$row['waga'],$row['rozmiar'],$row['pojemnosc'],$row['material'],$row['dodatkowy_material_wykonania'],$row['rozmiar_opakowania'],$row['multipack'],$row['rozmiar_opakowania_zbiorczego'],$row['minimalne_zamowienie'],$row['coloration'],$row['znakowanie'],$row['kraj_produkcji'],$row['rozmiar_nadruku']);
+                echo "iyo";
+            }
+
+
+
+
+
+
+
+        }catch (PDOException $e)
+        {
+            echo $e->getMessage();
         }
+
 
 
 
