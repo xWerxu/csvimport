@@ -805,7 +805,7 @@ $sql_model_code = $conn->prepare("SELECT * FROM csv_import WHERE model_code = ? 
 
 // TODO Naprawa bledow o zduplikowanym produkcie przy kazdym errorze
 // TODO Wieksza ilosc produktow w debugu niz statusu 0
-// TDDO Do sprawdzenia wszystkie te linijki poniżej bo chyba średnio są dopracowane
+// TODO Do sprawdzenia wszystkie te linijki poniżej bo chyba średnio są dopracowane
 
 foreach ($fetch as $row)
     {
@@ -842,35 +842,40 @@ foreach ($fetch as $row)
             echo "<br><br> ======================================== <br><br>";
         }*/
 
-
-        try {
-            if(!$row['id_Manufacturer'] || !$row['ID_Kategori'] || !$row['model_code'] || !$row['cena'] || !$row['nazwa'])
-            {
-                $produkt->sql_debug->execute(array("ID: ".$row['id'],"Plik CSV","Brak ID Producenta, ID Kategorii, Kod modelu, nazwy produktu, bądź ceny w pliku csv."));
-
-            }else
-            {
-                $produkt->setValue($row['id_Manufacturer'],$row['ID_Kategori'],$row['model_code'],$row['nazwa'],$row['opis'],$row['zdjecie_glowne'],$row['zdjecie_dodatkowe'],$row['meta_opis'],$row['meta_keywords'],$row['cena'],$row['price_flag'],$row['hydrokolor'],$row['kolory'],$row['dodatkowe_kolory'],$row['waga'],$row['rozmiar'],$row['pojemnosc'],$row['material'],$row['dodatkowy_material_wykonania'],$row['rozmiar_opakowania'],$row['multipack'],$row['rozmiar_opakowania_zbiorczego'],$row['minimalne_zamowienie'],$row['coloration'],$row['znakowanie'],$row['kraj_produkcji'],$row['rozmiar_nadruku']);
-                if($produkt->AddProduct() == 0)
+        if(count($row) == 32)
+        {
+            try {
+                if(!$row['id_Manufacturer'] || !$row['ID_Kategori'] || !$row['model_code'] || !$row['cena'] || !$row['nazwa'])
                 {
-                    $conn->prepare("UPDATE csv_import SET status = 1 WHERE id = :id;")->execute([':id' => $row['id']]);
-                    echo "Dodano produkt ".$row['model_code']."<br>";
+                    $produkt->sql_debug->execute(array("ID: ".$row['id'],"Plik CSV","Brak ID Producenta, ID Kategorii, Kod modelu, nazwy produktu, bądź ceny w pliku csv."));
+
                 }else
                 {
-                    echo "Problem z produktem ".$row['model_code']."<br>";
+                    $produkt->setValue($row['id_Manufacturer'],$row['ID_Kategori'],$row['model_code'],$row['nazwa'],$row['opis'],$row['zdjecie_glowne'],$row['zdjecie_dodatkowe'],$row['meta_opis'],$row['meta_keywords'],$row['cena'],$row['price_flag'],$row['hydrokolor'],$row['kolory'],$row['dodatkowe_kolory'],$row['waga'],$row['rozmiar'],$row['pojemnosc'],$row['material'],$row['dodatkowy_material_wykonania'],$row['rozmiar_opakowania'],$row['multipack'],$row['rozmiar_opakowania_zbiorczego'],$row['minimalne_zamowienie'],$row['coloration'],$row['znakowanie'],$row['kraj_produkcji'],$row['rozmiar_nadruku']);
+                    if($produkt->AddProduct() == 0)
+                    {
+                        $conn->prepare("UPDATE csv_import SET status = 1 WHERE id = :id;")->execute([':id' => $row['id']]);
+                        echo "Dodano produkt ".$row['model_code']."<br>";
+                    }else
+                    {
+                        echo "Problem z produktem ".$row['model_code']."<br>";
+                    }
                 }
+
+
+            }catch (PDOException $e)
+            {
+                echo $e->getMessage();
             }
-
-
-
-
-
-
-
-        }catch (PDOException $e)
+        }else
         {
-            echo $e->getMessage();
+            $count_v = count($row) - 2;
+            $produkt->sql_debug->execute(array("ID: ".$row['id'],"Plik CSV","Nieodpowiednia ilość pozycji w pliku csv. Docelowo: 30. Aktualnie: ".$count_v));
+
         }
+
+
+
 
 
 
