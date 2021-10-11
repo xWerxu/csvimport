@@ -15,7 +15,7 @@ $filename = "testowe3.csv";   // sciezka do pliku
     echo "Polaczono z baza danych <br>";
 
 
-    $conn->query("ALTER DATABASE `$this->dbname` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci");
+    $conn->query("ALTER DATABASE `$dbname` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci");
 
     $data = [];
     $f = fopen($filename, 'r');
@@ -38,7 +38,7 @@ $filename = "testowe3.csv";   // sciezka do pliku
                 CREATE TABLE  csv_import(
                 id int NOT NULL AUTO_INCREMENT,
                 PRIMARY KEY (id),
-                status int(1) NOT NULL,
+                status int(1) NOT NULL DEFAULT 0,
                 id_Manufacturer varchar(255),
                 nr_katalogowy varchar(255),
                 skrocony_numer_katalogowy varchar(255) COLLATE utf8_unicode_ci,
@@ -82,19 +82,15 @@ $filename = "testowe3.csv";   // sciezka do pliku
         }else echo "Dodano tabele 'csv_import' do bazy danych<br>";
 
 
-        if(!$sql_insert = $this->conn->prepare("INSERT INTO csv_import (id_Manufacturer, nr_katalogowy, skrocony_numer_katalogowy, kategoria_produktu, ID_Kategori, model_code, nazwa, opis, zdjecie_glowne, zdjecie_dodatkowe, meta_opis, meta_keywords, cena, price_flag, hydrokolor, kolory, dodatkowe_kolory, waga, rozmiar, pojemnosc, material,dodatkowy_material_wykonania, rozmiar_opakowania, multipack, rozmiar_opakowania_zbiorczego, minimalne_zamowienie,coloration, znakowanie, kraj_produkcji, rozmiar_nadruku) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"))
+        if(!$sql_insert = $conn->prepare("INSERT INTO csv_import (id_Manufacturer, nr_katalogowy, skrocony_numer_katalogowy, kategoria_produktu, ID_Kategori, model_code, nazwa, opis, zdjecie_glowne, zdjecie_dodatkowe, meta_opis, meta_keywords, cena, price_flag, hydrokolor, kolory, dodatkowe_kolory, waga, rozmiar, pojemnosc, material,dodatkowy_material_wykonania, rozmiar_opakowania, multipack, rozmiar_opakowania_zbiorczego, minimalne_zamowienie,coloration, znakowanie, kraj_produkcji, rozmiar_nadruku) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"))
         {
             echo "Błąd przy kwerendzie wprowadzającej do tabeli 'csv_import'<br>";
         }else echo "Gotowa kwerenda wprowadzająca do 'csv_import'<br>";
 
         foreach($data as $row)
         {
-            if(count($row) == 30)
-            {
-                $sql_insert->execute($row);
-            }else {
-                $this->sql_debug->execute([$this->model,"sylius_product","Niezgadza sie liczba komórek w pliku. Docelowo: 30 Aktualnie: ".count($row)]);
-            }
+            $sql_insert->execute($row);
+            echo "Dodano ".$row[5]."<br>";
         }
     }catch (PDOException $e)
     {

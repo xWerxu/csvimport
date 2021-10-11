@@ -13,8 +13,7 @@ $dbname = "kubki-reklamowe";   // nazwa bazy danych
 $file_path = "testowe3.csv";   // sciezka do pliku
 
 
-// TODO Ogarniecie liczenia komorek zeby sie nie dodawaly
-// Pododawanie wszedzie debug_import messeges
+
 
 class Produkt
 {
@@ -28,10 +27,9 @@ class Produkt
 
     public $locale = "pl_PL";
     public $channel_id = 1;
-    public $image_id = 0;          // pk z sylius_product_image
-    public $taxon_id = 18;          // id grupy z 'sylius_taxon'
-    public $taxon_position = 0;    // kiedy jest wiele produktów przypisanych do jednego taxona
-    public $taxon_translate = null;   // Tabela asocjacyjna zawierająca id kategorii
+    public $image_id = 0;
+    public $taxon_id = 0;
+    public $taxon_translate = null;
     public $product_id = 0;
     public $variant_id = 0;
     public $conn = null;
@@ -41,9 +39,9 @@ class Produkt
 
 
 
-    public $cena = null;                 // price w tabeli 'sylius_channel_pricing'
-    public $producent = null;            // manufacturer_id z tabeli 'manufacturer' | must have
-    public $nazwa_produktu = null;       //must have
+    public $cena = null;
+    public $producent = null;
+    public $nazwa_produktu = null;
     public $opis = null;
     public $short_opis = null;
     public $meta_keywords = null;
@@ -68,10 +66,6 @@ class Produkt
     public $rozmiar_nadruku = null;
     public $img_main_src = null;
     public $img_thumbnail_src = null;
-
-    public $sql_trans_start = null;
-    public $sql_trans_commit = null;
-    public $sql_trans_rollback = null;
 
     public $sql_sylius_product = null;
     public $sql_sylius_product_id = null;
@@ -110,138 +104,6 @@ class Produkt
 
     }
 
-    public function test_product_variant()
-    {
-        $sql_var1 = array("hydrokolor"=>"Hydrokolor",
-            "waga"=>"Waga",
-            "rozmiar"=>"Rozmiar",
-            "pojemnosc"=>"Pojemnosc",
-            "material"=>"Material",
-            "rozmiar-opakowania"=>"Rozmiar opakowania",
-            "mulitpack"=>"Multipack",
-            "rozmiar-opakowania-zbiorczego"=>"Rozmiar opakowania zbiorczego",
-            "coloration" => "Coloration",
-            "znakowanie" => "Znakowanie",
-            "kraj-produkcji"=>"Kraj produkcji",
-            "rozmiar-nadruku"=>"Rozmiar nadruku");
-
-        $sql1 = $this->conn->prepare("INSERT INTO sylius_product_attribute (code, type, storage_type, configuration,created_at, updated_at, position) VALUES (?,?,?,?,?,?,?)");
-        $sql2 = $this->conn->prepare("INSERT INTO sylius_product_attribute_translation (translatable_id, name, locale) VALUES (?,?,?)");
-        $position = 4;
-        try{
-            foreach($sql_var1 as $value => $translate)
-            {
-                $today = date("Y-m-d H:i:s");  // Zebranie aktualnej daty i przekształcenie jej na format mysql
-                $position++;
-                $var1 = array($value,"text","text","a:0:{}",$today,$today,$position);
-                $sql1->execute($var1);
-                $attr_id =  $this->conn->lastInsertId();
-                $var2 = array($attr_id,$translate,"pl_PL");
-                $sql2->execute($var2);
-            }
-        }catch (PDOException $e)
-        {
-            echo "Wywróciło się na 'test_product_variant' <br>".$e->getMessage()."<br>";
-            array_push($this->errormessage,[$this->model,"fun test_product_variant()","Blad przy wprowadzaniu variantow z csv do bazy danych "]);
-
-        }
-
-
-    }
-
-    public function csv_upload($filename)
-    {
-        $this->conn->query("ALTER DATABASE `$this->dbname` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci");
-        $data = [];
-        $f = fopen($filename, 'r');
-
-        if ($f === false) {
-            die('Cannot open the file ' . $filename);
-        }
-        $firstline = fgetcsv($f,0,";"); // Wywołuje pierwszą linie poza loopem skipując nazwy kolumn
-
-        while (($row = fgetcsv($f,0,";")) !== false) {
-            $data[] = $row;
-        }
-        fclose($f);
-
-        $sql = <<<SQL
-                SET NAMES utf8;
-                SET CHARACTER SET utf8;
-                DROP TABLE IF EXISTS `csv_import`;
-                CREATE TABLE  csv_import(
-                id int NOT NULL AUTO_INCREMENT,
-                PRIMARY KEY (id),
-                status int(1) NOT NULL,
-                id_Manufacturer varchar(255),
-                nr_katalogowy varchar(255),
-                skrocony_numer_katalogowy varchar(255) COLLATE utf8_unicode_ci,
-                kategoria_produktu nvarchar(1023) COLLATE utf8_unicode_ci,
-                ID_Kategori  nvarchar(63),
-                model_code nvarchar(511) COLLATE utf8_unicode_ci,
-                nazwa nvarchar(1023) COLLATE utf8_unicode_ci,
-                opis longtext COLLATE utf8_unicode_ci,
-                zdjecie_glowne nvarchar(1023) COLLATE utf8_unicode_ci,
-                zdjecie_dodatkowe nvarchar(1023) COLLATE utf8_unicode_ci,
-                meta_opis nvarchar(2047) COLLATE utf8_unicode_ci,
-                meta_keywords nvarchar(2047) COLLATE utf8_unicode_ci,
-                cena text COLLATE utf8_unicode_ci,
-                price_flag nvarchar(511) COLLATE utf8_unicode_ci,
-                hydrokolor varchar(15),
-                kolory nvarchar(511) COLLATE utf8_unicode_ci,
-                dodatkowe_kolory nvarchar(2047) COLLATE utf8_unicode_ci,
-                waga nvarchar(511) COLLATE utf8_unicode_ci,
-                rozmiar nvarchar(511) COLLATE utf8_unicode_ci,
-                pojemnosc nvarchar(511) COLLATE utf8_unicode_ci,
-                material nvarchar(511) COLLATE utf8_unicode_ci,
-                dodatkowy_material_wykonania nvarchar(2047) COLLATE utf8_unicode_ci,
-                rozmiar_opakowania nvarchar(511) COLLATE utf8_unicode_ci,
-                multipack nvarchar(511) COLLATE utf8_unicode_ci,
-                rozmiar_opakowania_zbiorczego nvarchar(511) COLLATE utf8_unicode_ci,
-                minimalne_zamowienie nvarchar(511) COLLATE utf8_unicode_ci,
-                coloration nvarchar(1023) COLLATE utf8_unicode_ci,
-                znakowanie nvarchar(511) COLLATE utf8_unicode_ci,
-                kraj_produkcji nvarchar(511) COLLATE utf8_unicode_ci,
-                rozmiar_nadruku nvarchar(1023) COLLATE utf8_unicode_ci
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-        SQL;
-
-        try {
-
-
-            if(!$this->conn->query($sql))
-            {
-                echo "Błąd w dodawaniu tabeli 'csv_import' do bazy danych <br>";
-            }else echo "Dodano tabele 'csv_import' do bazy danych<br>";
-
-
-            if(!$sql_insert = $this->conn->prepare("INSERT INTO csv_import (id_Manufacturer, nr_katalogowy, skrocony_numer_katalogowy, kategoria_produktu, ID_Kategori, model_code, nazwa, opis, zdjecie_glowne, zdjecie_dodatkowe, meta_opis, meta_keywords, cena, price_flag, hydrokolor, kolory, dodatkowe_kolory, waga, rozmiar, pojemnosc, material,dodatkowy_material_wykonania, rozmiar_opakowania, multipack, rozmiar_opakowania_zbiorczego, minimalne_zamowienie,coloration, znakowanie, kraj_produkcji, rozmiar_nadruku) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"))
-            {
-                echo "Błąd przy kwerendzie wprowadzającej do tabeli 'csv_import'<br>";
-            }else echo "Gotowa kwerenda wprowadzająca do 'csv_import'<br>";
-
-            foreach($data as $row)
-            {
-                if(count($row) == 30)
-                {
-                    $sql_insert->execute($row);
-                }else {
-                    $this->sql_debug->execute([$this->model,"csv_upload","Niezgadza sie liczba komórek w pliku. Docelowo: 30 Aktualnie: ".count($row)]);
-                }
-            }
-        }catch (PDOException $e)
-        {
-            echo "Wywróciło się na csv import: <br>".$e->getMessage()."<br>";
-        }
-
-
-// Do testowania jak sie wrzuca plik do tabel
-
-//        echo "<pre>";
-//        print_r($data);
-//        echo "</pre>";
-
-    }
 
     public function debug_table()
     {
@@ -367,6 +229,7 @@ class Produkt
             }
             echo "Fetch atrybutów udany <br>";
 
+
         }catch (PDOException $e)
         {
 
@@ -428,18 +291,10 @@ class Produkt
                 $this->sql_sylius_product_attribute_value->execute($sql_var); //Podstawienie wartości do kwerendy oraz jej realizacaja w bazie danych
 
             } catch (PDOException $e) {
-                // $this->sql_debug->execute(array($this->model,"Dodawanie atrybutów w `sql_sylius_product_attribute_value`",$e->getMessage()));
                 array_push($this->errormessage, [$this->model, "Dodawanie atrybutów w `sql_sylius_product_attribute_value`", $e->getMessage()]);
             }
         }
     }
-
-
-
-    //DO ZROBIENIA: Tabela tłumaczeń nazwy kategori na ich id, Tabela tłumaczeń dla nazw producenta na ich id,
-    //Weryfikacja czy zawarte są wartości konieczne do utworzenia produktu
-
-
 
 
     public function AddProduct()
@@ -451,6 +306,15 @@ class Produkt
 
         // Dodanie wartości do tabeli 'sylius_product'
         $this->conn->beginTransaction();
+
+        $this->duplicate_check->execute(array($this->model));
+        $this->duplicate_check->setFetchMode(PDO::FETCH_ASSOC);
+        $fetch_model_code = $this->duplicate_check->fetchAll();
+
+        echo "<pre>";
+        print_r($fetch_model_code);
+        echo "</pre>";
+
 
         if ($this->maerrory == 0) {
             try {
@@ -709,8 +573,6 @@ class Produkt
             }
 
 
-
-
         // Dodanie wartosci do tabeli 'sylius_product_taxon'
 
             if($this->maerrory == 0)
@@ -724,7 +586,6 @@ class Produkt
                     $this->maerrory = 1;
                 }
             }
-
 
 
         // Dodanie wartosci do tabeli 'sylius_channel_pricing'
@@ -741,10 +602,6 @@ class Produkt
                     $this->maerrory = 1;
                 }
             }
-
-
-
-
 
 
         // Dodanie wartosci do tabeli 'sylius_product_translation'
@@ -782,7 +639,6 @@ class Produkt
     }
 }
 
-
 // Połączenie z bazą danych, zamknięcie skryptu w razie niepowodzenia
 try {
     $conn = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8mb4", $username, $password);
@@ -794,13 +650,9 @@ try {
     die("Polaczenie nieudane: <br>" . $e->getMessage()) . "<br>";
 }
 
-
-
 $conn->query("ALTER DATABASE `$dbname` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci");
 $produkt = new Produkt($conn);
 $produkt->debug_table();
-$produkt->csv_upload($file_path);
-$produkt->test_product_variant();
 $produkt->taxon_id_array();
 
 $sql_fetch_csv = $conn->query("SELECT * FROM csv_import WHERE status = 0;");
@@ -809,47 +661,8 @@ $fetch = $sql_fetch_csv->fetchAll();
 $sql_model_code = $conn->prepare("SELECT * FROM csv_import WHERE model_code = ? AND status = 1");
 
 
-// TODO Ogarniecie mozliwosci duplikatow w systemie
-// TODO Do sprawdzenia wszystkie te linijki poniżej bo chyba średnio są dopracowane
-
-
-
-
 foreach ($fetch as $row)
     {
-/*        try{
-            if(!$row['id_Manufacturer'] == null || !$row['nazwa'] == null || !$row['cena'] == null)
-            {
-                $produkt->setValue($row['id_Manufacturer'],$row['ID_Kategori'],$row['model_code'],$row['nazwa'],$row['opis'],$row['zdjecie_glowne'],$row['zdjecie_dodatkowe'],$row['meta_opis'],$row['meta_keywords'],$row['cena'],$row['price_flag'],$row['hydrokolor'],$row['kolory'],$row['dodatkowe_kolory'],$row['waga'],$row['rozmiar'],$row['pojemnosc'],$row['material'],$row['dodatkowy_material_wykonania'],$row['rozmiar_opakowania'],$row['multipack'],$row['rozmiar_opakowania_zbiorczego'],$row['minimalne_zamowienie'],$row['coloration'],$row['znakowanie'],$row['kraj_produkcji'],$row['rozmiar_nadruku']);
-                $sql_model_code->execute(array($row['model_code']));
-                $sql_model_code->setFetchMode(PDO::FETCH_ASSOC);
-                $fetch_model_code = $sql_model_code->fetchAll();
-                if(!$fetch_model_code == array())
-                {
-                    if($produkt->AddProduct()){
-                        echo " Dodano produkt:".$row['model_code'];
-                        echo "<br><br> ========================================= <br><br>";
-                        $conn->prepare("UPDATE csv_import SET status = 1 WHERE id = :id;")->execute([':id' => $row['id']]);
-
-                    }else{
-                        echo "Problem z produktem: ". $row['model_code']."<br>";
-                        $produkt->sql_debug->execute(array($row['model_code'],"Plik CSV","Produkt już istnieje "));
-                        echo "<br><br> ========================================= <br><br>";
-                    }
-
-                }else
-                {
-                    echo "Produkt już istnieje, kod modelu: ".$row['model_code']."<br>";
-                    echo "<br><br> ========================================= <br><br>";
-                }
-            }else $produkt->sql_debug->execute(array($row['model_code'],"Plik CSV","Brak ID Producenta, nazwy produktu bądź ceny w pliku csv"));
-        }catch (PDOException $e)
-        {
-            $produkt->sql_debug->execute(array($row['model_code'],"Plik CSV","Brak ID Producenta, ID Kategorii, Kod modelu, nazwy produktu, bądź ceny w pliku csv. SQL ERROR: ".$e->getMessage()));
-            echo "Problem z produktem: ". $row['model_code'].". Prawdopodobnie brak jednego z wymaganych parametrow w pliku csv<br>".$e->getMessage()."<br>";
-            echo "<br><br> ======================================== <br><br>";
-        }*/
-
         if(count($row) == 32)
         {
             try {
@@ -885,22 +698,5 @@ foreach ($fetch as $row)
         }
 
 
-
-
-
-
-
     }
 
-
-
-//$produkt->setValues();
-//$produkt->AddProduct();
-
-// Patrzyłem na pliki csv, trzeba ogarnąć kategorie inne w taxonach, ma być status w tabeli produktów, nie wszędzie jest hydrokolor
-
-// Path tymczasowo zmieniony na images/testing
-
-// DO ZROBIENIA PO WYJEZDZIE
-//Dodać do dodatkowych img parsowanie dla wielu zdjec
-// Ogarnięcie polskich znaków w opisach bo dalej nie działają

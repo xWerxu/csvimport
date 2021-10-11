@@ -17,7 +17,7 @@ $conn = 0;
 
 $db = new PDO("mysql:host=$mysql_host;dbname=$mysql_database", $mysql_user, $mysql_password);
 
-$query = file_get_contents("dbase.sql");
+$query = file_get_contents("kubki-reklamowe-cechy.sql");
 
 $stmt = $db->prepare($query);
 
