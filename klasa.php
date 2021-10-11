@@ -105,7 +105,7 @@ class Produkt
         $this->sql_sylius_taxon_id = $conn->prepare("SELECT id FROM sylius_taxon");
         $this->sql_sylius_channel_pricing = $conn->prepare("INSERT INTO sylius_channel_pricing (product_variant_id, price, original_price, channel_code) VALUES (?,?,?,?)");
         $this->sql_debug = $conn->prepare("INSERT INTO debug_import(model_code, gdzie, error) VALUES(?,?,?)");
-        $this->duplicate_check = $conn->prepare("SELECT * FROM csv_import WHERE model_code = 'R08252.04' AND status = 1");
+        $this->duplicate_check = $conn->prepare("SELECT * FROM csv_import WHERE model_code = ? AND status = 1");
 
 
     }
@@ -451,11 +451,6 @@ class Produkt
 
         // Dodanie wartości do tabeli 'sylius_product'
         $this->conn->beginTransaction();
-
-        $duplicate = $this->duplicate_check->execute([$this->model]);
-//        $duplicate->setFetchMode(PDO::FETCH_ASSOC);
-//        $duplicate_fetch = $duplicate->fetchAll();
-//        print_r($duplicate_fetch);
 
         if ($this->maerrory == 0) {
             try {
@@ -814,9 +809,11 @@ $fetch = $sql_fetch_csv->fetchAll();
 $sql_model_code = $conn->prepare("SELECT * FROM csv_import WHERE model_code = ? AND status = 1");
 
 
-// TODO Naprawa bledow o zduplikowanym produkcie przy kazdym errorze
-// TODO Wieksza ilosc produktow w debugu niz statusu 0
+// TODO Ogarniecie mozliwosci duplikatow w systemie
 // TODO Do sprawdzenia wszystkie te linijki poniżej bo chyba średnio są dopracowane
+
+
+
 
 foreach ($fetch as $row)
     {
