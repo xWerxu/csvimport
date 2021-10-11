@@ -18,10 +18,12 @@ $file_path = "testowe3.csv";   // sciezka do pliku
 
 class Produkt
 {
+    // 3 Wartosci ponizej są do modyfikacji przez użytkownika
+    // `$min_img_x` dla minimalnej szerokosci zdjecia, `$min_img_xy` dla minimalnej wysokosci zdjecia
+    // `$dbname` dla nazwy bazy danych
+
     public $min_img_x = 600;
-    public $min_img_y = 600;
-
-
+    public $min_img_y = 450;
     public $dbname = "kubki-reklamowe";
 
     public $locale = "pl_PL";
@@ -145,6 +147,8 @@ class Produkt
 
     }
 
+    // TODO Ogarniecie ze nie lapie modelu przy pierwszej linijce csv
+
     public function csv_upload($filename)
     {
         $this->conn->query("ALTER DATABASE `$this->dbname` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci");
@@ -154,7 +158,7 @@ class Produkt
         if ($f === false) {
             die('Cannot open the file ' . $filename);
         }
-        $firstline = fgetcsv($f,0,";"); // Wywołuje pierwszą linie poza loopem skipując nazwy kolumn
+//        $firstline = fgetcsv($f,0,";"); // Wywołuje pierwszą linie poza loopem skipując nazwy kolumn
 
         while (($row = fgetcsv($f,0,";")) !== false) {
             $data[] = $row;
@@ -649,11 +653,11 @@ class Produkt
 
                                 } else {
                                     $this->maerrory = 1;
-                                    array_push($this->errormessage, [$this->model, "sylius_product_variant", "Prawdopodobnie nieobsługiwany format zdjecia, obsługujemy jedynie jpg,jpeg,png. Nazwa zdjęcia: " . trim($main)]);
+                                    array_push($this->errormessage, [$this->model, "Obsluga zdjec", "Prawdopodobnie nieobsługiwany format zdjecia, obsługujemy jedynie jpg,jpeg,png. Nazwa zdjęcia: " . trim($main)]);
                                 }
                             } else {
                                 $this->maerrory = 1;
-                                array_push($this->errormessage, [$this->model, "sylius_product_variant", "Zdjęcie prawdopodobnie jest za male. Minimalny wymiar: 600 x 480. Aktualny wymiar: ".$image_main_x." x ".$image_main_y." Nazwa zdjęcia: " . trim($main)]);
+                                array_push($this->errormessage, [$this->model, "Obsluga zdjec / sylius_product_image_product_variants", "Zdjęcie prawdopodobnie jest za male. Minimalny wymiar: " . $this->min_img_x. " x ".$this->min_img_y .". Aktualny wymiar: ".$image_main_x." x ".$image_main_y." Nazwa zdjęcia: " . trim($main)]);
                             }
 
 
@@ -682,7 +686,7 @@ class Produkt
 
                                 } else {
                                     //                   $this->sql_debug->execute(array($this->model, "Obslga zdjec", "Prawdopodobnie nieobsługiwany format zdjecia, obsługujemy jedynie jpg,jpeg,png. Nazwa zdjęcia: " . $this->img_thumbnail_src));
-                                    array_push($this->errormessage, [$this->model, "Obslga zdjec", "Prawdopodobnie nieobsługiwany format zdjecia, obsługujemy jedynie jpg,jpeg,png. Nazwa zdjęcia: " . trim($thumbnail)]);
+                                    array_push($this->errormessage, [$this->model, "Obsluga zdjec", "Prawdopodobnie nieobsługiwany format zdjecia, obsługujemy jedynie jpg,jpeg,png. Nazwa zdjęcia: " . trim($thumbnail)]);
                                     $this->maerrory = 1;
                                 }
 
@@ -690,7 +694,7 @@ class Produkt
                             } else {
                                 $this->maerrory = 1;
 //                    $this->sql_debug->execute(array($this->model, "Obslga zdjec", "Zdjęcie prawdopodobnie jest za male. Nazwa zdjęcia: " . $this->img_thumbnail_src));
-                                array_push($this->errormessage, [$this->model, "Obslga zdjec", "Zdjęcie prawdopodobnie jest za male. Minimalny wymiar: 600 x 480. Aktualny wymiar: ".$image_thumbnail_x." x ".$image_thumbnail_y." Nazwa zdjęcia: " . trim($thumbnail)]);
+                                array_push($this->errormessage, [$this->model, "Obsluga zdjec", "Zdjęcie prawdopodobnie jest za male. Minimalny wymiar: " . $this->min_img_x. " x ".$this->min_img_y .". Aktualny wymiar: ".$image_thumbnail_x." x ".$image_thumbnail_y." Nazwa zdjęcia: " . trim($thumbnail)]);
                             }
                         }
                         }
