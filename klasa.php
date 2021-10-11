@@ -41,7 +41,6 @@ class Produkt
 
 
 
-    public $kod_produktu = null;       // 'sylius_product' | must have
     public $cena = null;                 // price w tabeli 'sylius_channel_pricing'
     public $producent = null;            // manufacturer_id z tabeli 'manufacturer' | must have
     public $nazwa_produktu = null;       //must have
@@ -86,6 +85,7 @@ class Produkt
     public $sql_sylius_product_taxon = null;
     public $sql_sylius_channel_pricing = null;
     public $sql_debug = null;
+    public $duplicate_check = null;
 
 
     public function __construct($conn)
@@ -105,6 +105,8 @@ class Produkt
         $this->sql_sylius_taxon_id = $conn->prepare("SELECT id FROM sylius_taxon");
         $this->sql_sylius_channel_pricing = $conn->prepare("INSERT INTO sylius_channel_pricing (product_variant_id, price, original_price, channel_code) VALUES (?,?,?,?)");
         $this->sql_debug = $conn->prepare("INSERT INTO debug_import(model_code, gdzie, error) VALUES(?,?,?)");
+        $this->duplicate_check = $conn->prepare("SELECT * FROM csv_import WHERE model_code = 'R08252.04' AND status = 1");
+
 
     }
 
@@ -147,8 +149,6 @@ class Produkt
 
     }
 
-    // TODO Ogarniecie ze nie lapie modelu przy pierwszej linijce csv
-
     public function csv_upload($filename)
     {
         $this->conn->query("ALTER DATABASE `$this->dbname` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci");
@@ -158,7 +158,7 @@ class Produkt
         if ($f === false) {
             die('Cannot open the file ' . $filename);
         }
-//        $firstline = fgetcsv($f,0,";"); // Wywołuje pierwszą linie poza loopem skipując nazwy kolumn
+        $firstline = fgetcsv($f,0,";"); // Wywołuje pierwszą linie poza loopem skipując nazwy kolumn
 
         while (($row = fgetcsv($f,0,";")) !== false) {
             $data[] = $row;
@@ -204,7 +204,6 @@ class Produkt
                 kraj_produkcji nvarchar(511) COLLATE utf8_unicode_ci,
                 rozmiar_nadruku nvarchar(1023) COLLATE utf8_unicode_ci
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
         SQL;
 
         try {
@@ -227,7 +226,7 @@ class Produkt
                 {
                     $sql_insert->execute($row);
                 }else {
-                    $this->sql_debug->execute([$this->model,"sylius_product","Niezgadza sie liczba komórek w pliku. Docelowo: 30 Aktualnie: ".count($row)]);
+                    $this->sql_debug->execute([$this->model,"csv_upload","Niezgadza sie liczba komórek w pliku. Docelowo: 30 Aktualnie: ".count($row)]);
                 }
             }
         }catch (PDOException $e)
@@ -386,7 +385,6 @@ class Produkt
                               $rozmiar_opakowania,$mulitpack,$rozmiar_opakowania_zbiorczego,
                               $minimalne_zamowienie,$coloration, $znakowanie,$kraj_produkcji,$rozmiar_nadruku)
     {
-        $this->kod_produktu = $this->model;
         $this->cena = $cena;
         $this->producent = $producent;
         $this->nazwa_produktu = $nazwa_produktu;
@@ -453,10 +451,19 @@ class Produkt
 
         // Dodanie wartości do tabeli 'sylius_product'
         $this->conn->beginTransaction();
+
+        $duplicate = $this->duplicate_check->execute([$this->model]);
+//        $duplicate->setFetchMode(PDO::FETCH_ASSOC);
+//        $duplicate_fetch = $duplicate->fetchAll();
+//        print_r($duplicate_fetch);
+
         if ($this->maerrory == 0) {
             try {
-                $sql_var = array($this->taxon_id, $this->kod_produktu, $today, $today, 1, "choice", 0, $this->producent);  // Stworzenie tabeli z potrzebnymi wartościami branymi z pliku csv
+                $sql_var = array($this->taxon_id, $this->model, $today, $today, 1, "choice", 0, $this->producent);  // Stworzenie tabeli z potrzebnymi wartościami branymi z pliku csv
                 $this->sql_sylius_product->execute($sql_var); //Podstawienie wartości do kwerendy oraz jej realizacaja w bazie danych
+
+
+
                 $sql = $this->sql_sylius_product_id;
                 $sql->execute();
                 $sql->setFetchMode(PDO::FETCH_ASSOC);
@@ -612,7 +619,7 @@ class Produkt
             if($this->maerrory == 0)
             {
                 try {
-                    $sql_var = array($this->product_id, $this->kod_produktu, $today, $today, 1);  // Stworzenie tabeli z potrzebnymi wartościami branymi z pliku csv
+                    $sql_var = array($this->product_id, $this->model, $today, $today, 1);  // Stworzenie tabeli z potrzebnymi wartościami branymi z pliku csv
                     $this->sql_sylius_product_variant->execute($sql_var); //Podstawienie wartości do kwerendy oraz jej realizacaja w bazie danych
                     $this->variant_id = $this->conn->lastInsertId();
 
@@ -860,9 +867,11 @@ foreach ($fetch as $row)
                     {
                         $conn->prepare("UPDATE csv_import SET status = 1 WHERE id = :id;")->execute([':id' => $row['id']]);
                         echo "Dodano produkt ".$row['model_code']."<br>";
+                        echo "================= <br>";
                     }else
                     {
                         echo "Problem z produktem ".$row['model_code']."<br>";
+                        echo "================= <br>";
                     }
                 }
 
