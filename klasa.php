@@ -19,11 +19,10 @@ class Produkt
 {
     // 3 Wartosci ponizej są do modyfikacji przez użytkownika
     // `$min_img_x` dla minimalnej szerokosci zdjecia, `$min_img_xy` dla minimalnej wysokosci zdjecia
-    // `$dbname` dla nazwy bazy danych
 
     public $min_img_x = 600;
     public $min_img_y = 450;
-    public $dbname = "kubki-reklamowe";
+//    public $dbname = "kubki-reklamowe";
 
     public $locale = "pl_PL";
     public $channel_id = 1;
@@ -310,11 +309,6 @@ class Produkt
         $this->duplicate_check->execute(array($this->model));
         $this->duplicate_check->setFetchMode(PDO::FETCH_ASSOC);
         $fetch_model_code = $this->duplicate_check->fetchAll();
-
-        echo "<pre>";
-        print_r($fetch_model_code);
-        echo "</pre>";
-
 
         if ($this->maerrory == 0) {
             try {
